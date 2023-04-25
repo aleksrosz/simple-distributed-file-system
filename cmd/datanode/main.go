@@ -1,13 +1,13 @@
 package main
 
 import (
-	"aleksrosz/simple-distributed-file-system/metadatanode"
+	"aleksrosz/simple-distributed-file-system/datanode"
 	"fmt"
 )
 
 func main() {
-	create, err := metadatanode.Create(metadatanode.Config{
-		DataDir: "./test_directory/metadatanode",
+	create, err := datanode.Create(datanode.Config{
+		DataDir: "./test_directory/dataNode01",
 		Debug:   true,
 		Port:    "8080",
 		Addres:  "0.0.0.0",

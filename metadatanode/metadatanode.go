@@ -1,6 +1,8 @@
 package metadatanode
 
 import (
+	pb "aleksrosz/simple-distributed-file-system/proto"
+	"google.golang.org/grpc"
 	"log"
 	"net"
 	"sync"
@@ -16,6 +18,10 @@ type MetadataNodeState struct {
 	LeaderAddress string
 }
 
+type Server struct {
+	pb.BlockReportServiceServer
+}
+
 // Create a new MetadataNode
 func Create(conf Config) (*MetadataNodeState, error) {
 	var dn MetadataNodeState
@@ -27,6 +33,15 @@ func Create(conf Config) (*MetadataNodeState, error) {
 	lis, err := net.Listen("tcp", dn.Addr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
+	}
+
+	log.Printf("Listening on %s", dn.Addr)
+	s := grpc.NewServer()
+	pb.RegisterBlockReportServiceServer(s, &Server{})
+
+	err = s.Serve(lis)
+	if err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 
 	//go dn.grpcstart(conf.Listener) // Start the RPC server https://grpc.io/

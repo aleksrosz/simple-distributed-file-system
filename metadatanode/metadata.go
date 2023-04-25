@@ -4,8 +4,8 @@ import "sync"
 
 type blockReport struct {
 	fileName       string
-	blockID        int
-	dataNodeNumber int
+	blockID        int32
+	dataNodeNumber int32
 }
 
 // In memory database for storing blockReport results. blockReport methods are
