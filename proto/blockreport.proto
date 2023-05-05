@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package blockreport;
+
+option go_package ="aleksrosz/simple-distributed-file-system/proto";
+
+import "google/protobuf/empty.proto";
+
+message BlockReport {
+  string fileName = 1;
+  int32 blockID = 2;
+  int32 dataNodeNumber = 3;
+}
+
+service BlockReportService {
+  rpc SendBlockReport (BlockReport) returns (BlockReport);
+  rpc UpdateBlockReport (BlockReport) returns (google.protobuf.Empty);
+}
