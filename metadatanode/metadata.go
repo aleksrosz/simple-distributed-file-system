@@ -2,10 +2,10 @@ package metadatanode
 
 import "sync"
 
-type blockReport struct {
-	fileName       string
-	blockID        int32
-	dataNodeNumber int32
+type BlockReportItem struct {
+	FileName       string
+	BlockID        int32
+	DataNodeNumber int32
 }
 
 // In memory database for storing blockReport results. blockReport methods are
@@ -13,18 +13,18 @@ type blockReport struct {
 type blockReportStore struct {
 	sync.Mutex
 
-	results map[int]blockReport
+	results map[int]BlockReportItem
 	nextId  int
 }
 
-func New() *blockReportStore {
+func NewDatabase() *blockReportStore {
 	ts := &blockReportStore{}
-	ts.results = make(map[int]blockReport)
+	ts.results = make(map[int]BlockReportItem)
 	ts.nextId = 0
 	return ts
 }
 
-func (ts *blockReportStore) Add(result blockReport) {
+func (ts *blockReportStore) Add(result BlockReportItem) {
 	ts.Lock()
 	defer ts.Unlock()
 	ts.results[ts.nextId] = result
@@ -37,14 +37,14 @@ func (ts *blockReportStore) Delete(id int) {
 	delete(ts.results, id)
 }
 
-func (ts *blockReportStore) Get(id int) (blockReport, bool) {
+func (ts *blockReportStore) Get(id int) (BlockReportItem, bool) {
 	ts.Lock()
 	defer ts.Unlock()
 	result, ok := ts.results[id]
 	return result, ok
 }
 
-func (ts *blockReportStore) Update(id int, result blockReport) {
+func (ts *blockReportStore) Update(id int, result BlockReportItem) {
 	ts.Lock()
 	defer ts.Unlock()
 	ts.results[id] = result
