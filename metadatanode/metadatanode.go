@@ -2,10 +2,13 @@ package metadatanode
 
 import (
 	pb "aleksrosz/simple-distributed-file-system/proto"
+	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 var Debug bool //TODO debug
@@ -28,10 +31,8 @@ var Database1 = NewDatabase()
 func Create(conf Config) (*MetadataNodeState, error) {
 	var dn MetadataNodeState
 
-	dn.Addr = conf.Addres + ":" + conf.Port
-	//dn.heartbeatInterval = conf.HeartbeatInterval //TODO heartbeat
+	dn.Addr = conf.Addres + ":" + "8080"
 
-	// TODO gRPC
 	lis, err := net.Listen("tcp", dn.Addr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -45,8 +46,18 @@ func Create(conf Config) (*MetadataNodeState, error) {
 	if err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-	//go dn.grpcstart(conf.Listener) // Start the RPC server https://grpc.io/
-	//go dn.Heartbeat() //TODO heartbeat
+
+	//Connect for health check
+	for {
+		conn, err := grpc.Dial("0.0.0.0:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatal("filed to connect", err)
+		}
+		defer conn.Close()
+		c := pb2.NewHealthClient(conn)
+		queryHealthCheck(c)
+		time.Sleep(5 * time.Second)
+	}
 
 	// create in memory database for storing blockReport structs
 	//blockReportStore := New()

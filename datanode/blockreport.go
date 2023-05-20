@@ -13,7 +13,7 @@ type BlockReportItem struct {
 	DataNodeNumber string
 }
 
-func createBlockReport(c pb.BlockReportServiceClient) {
+func sendBlockReport(c pb.BlockReportServiceClient) {
 	log.Println("---createBlockReport---")
 
 	report := &pb.BlockReport{
