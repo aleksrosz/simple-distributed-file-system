@@ -14,11 +14,11 @@ import (
 var Debug bool //TODO debug
 
 type MetadataNodeState struct {
-	mutex  sync.Mutex
-	NodeID string
-	//heartbeatInterval time.Duration //TODO heartbeat
-	Addr          string
-	LeaderAddress string
+	mutex             sync.Mutex
+	NodeID            string
+	HeartbeatInterval time.Duration //TODO heartbeat
+	Addr              string
+	LeaderAddress     string
 }
 
 type Server struct {
@@ -26,19 +26,15 @@ type Server struct {
 }
 
 var Database1 = NewDatabase()
+var DatanodeDatabase = NewDatanodeDatabase()
 
-// Create a new MetadataNode
-func Create(conf Config) (*MetadataNodeState, error) {
-	var dn MetadataNodeState
-
-	dn.Addr = conf.Addres + ":" + "8080"
-
-	lis, err := net.Listen("tcp", dn.Addr)
+func ListenBlockReportServiceServer(adres string) {
+	lis, err := net.Listen("tcp", adres)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	log.Printf("Listening on %s", dn.Addr)
+	log.Printf("Listening on %s", adres)
 	s := grpc.NewServer()
 	pb.RegisterBlockReportServiceServer(s, &Server{})
 
@@ -47,20 +43,27 @@ func Create(conf Config) (*MetadataNodeState, error) {
 		log.Fatalf("failed to serve: %v", err)
 	}
 
+}
+
+func QueryHealthCheck(adres string, timeInSec time.Duration) {
 	//Connect for health check
 	for {
-		conn, err := grpc.Dial("0.0.0.0:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.Dial(adres, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			log.Fatal("filed to connect", err)
+			log.Fatal("failed to connect", err)
 		}
 		defer conn.Close()
 		c := pb2.NewHealthClient(conn)
 		queryHealthCheck(c)
-		time.Sleep(5 * time.Second)
+		time.Sleep(timeInSec * time.Second)
 	}
+}
 
-	// create in memory database for storing blockReport structs
-	//blockReportStore := New()
+// Create a new MetadataNode
+func Create(conf Config) (*MetadataNodeState, error) {
+	var dn MetadataNodeState
+
+	dn.Addr = conf.Addres + ":" + "8080"
 
 	return &dn, nil
 }

@@ -20,4 +20,7 @@ func main() {
 	}
 	fmt.Println(create)
 
+	go datanode.ListenHealthCheckServer("0.0.0.0:8081")
+	datanode.SendBlockReport("0.0.0.0:8080")
+
 }

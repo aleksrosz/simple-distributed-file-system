@@ -22,39 +22,47 @@ type DataNodeState struct {
 	LeaderAddress     string
 }
 
-type HealthCheckServer struct {
+type healthCheckServer struct {
 	pb2.HealthServer
 }
 
-// Create a new datanode
-func Create(conf Config) (*DataNodeState, error) {
-	var dn DataNodeState
-
-	dn.Addr = conf.Addres + ":" + conf.Port
-	dn.LeaderAddress = conf.LeaderAddress + ":" + conf.LeaderPort
-
-	lis, err := net.Listen("tcp", dn.Addr)
+func ListenHealthCheckServer(adres string) {
+	lis, err := net.Listen("tcp", adres)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	log.Printf("Listening on %s", dn.Addr)
+	log.Printf("Listening on %s", adres)
 	s := grpc.NewServer()
-	pb2.RegisterHealthServer(s, &HealthCheckServer{})
+	pb2.RegisterHealthServer(s, &healthCheckServer{})
+	fmt.Println("test1")
 
 	err = s.Serve(lis)
 	if err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+	fmt.Println("test2")
+}
 
-	fmt.Println("test")
-	//Connect for block report
-	conn, err := grpc.Dial(dn.LeaderAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatal("filed to connect", err)
+func SendBlockReport(adres string) {
+	for {
+		//Connect for block report
+		conn, err := grpc.Dial(adres, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		fmt.Println("test3")
+		if err != nil {
+			log.Fatal("failed to connect", err)
+		}
+		defer conn.Close()
+		c := pb.NewBlockReportServiceClient(conn)
+		sendBlockReport(c)
+		time.Sleep(5 * time.Second)
 	}
-	defer conn.Close()
-	c := pb.NewBlockReportServiceClient(conn)
-	sendBlockReport(c)
+}
+
+// Create a new datanode
+func Create(conf Config) (*DataNodeState, error) {
+	var dn DataNodeState
+	dn.Addr = conf.Addres + ":" + conf.Port
+	dn.LeaderAddress = conf.LeaderAddress + ":" + conf.LeaderPort
 
 	return &dn, nil
 }

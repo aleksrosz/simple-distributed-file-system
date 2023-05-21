@@ -24,7 +24,7 @@ func sendBlockReport(c pb.BlockReportServiceClient) {
 
 	res, err := c.SendBlockReport(context.Background(), report)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %v", err)
 	}
 	log.Printf("Response from server: %v", res)
 }
