@@ -25,7 +25,7 @@ type Server struct {
 	pb.BlockReportServiceServer
 }
 
-var Database1 = NewDatabase()
+var BlockReportDatabase = NewDatabase()
 var DatanodeDatabase = NewDatanodeDatabase()
 
 func ListenBlockReportServiceServer(adres string) {
