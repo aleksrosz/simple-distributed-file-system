@@ -10,6 +10,8 @@ func (s *healthCheckServer) Check(ctx context.Context, in *pb2.HealthCheckReques
 	log.Printf("health chec was invoked %v", in)
 
 	return &pb2.HealthCheckResponse{
-		Status: 1, //TODO
+		Status:         1,         //TODO
+		DataNodeNumber: 3,         //TODO
+		IpAddress:      "9.9.9.9", //TODO
 	}, nil
 }

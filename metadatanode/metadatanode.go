@@ -54,7 +54,8 @@ func QueryHealthCheck(adres string, timeInSec time.Duration) {
 		}
 		defer conn.Close()
 		c := pb2.NewHealthClient(conn)
-		queryHealthCheck(c)
+		data := queryHealthCheck(c)
+		addHealthCheckValuesToDatabase(data.DataNodeNumber, data)
 		time.Sleep(timeInSec * time.Second)
 	}
 }

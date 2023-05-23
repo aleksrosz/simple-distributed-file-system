@@ -3,6 +3,7 @@ package metadatanode
 import "sync"
 
 type DatanodeItem struct {
+	Status         []int //We store last 3 statuses
 	DataNodeNumber int32
 	IpAddr         string
 	LastContact    int64
@@ -37,6 +38,7 @@ func (ts *datanodeStore) Delete(id int) {
 	delete(ts.results, id)
 }
 
+// TODO imho it should return error not only bool
 func (ts *datanodeStore) Get(id int) (DatanodeItem, bool) {
 	ts.Lock()
 	defer ts.Unlock()
