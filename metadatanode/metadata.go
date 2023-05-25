@@ -6,6 +6,7 @@ type BlockReportItem struct {
 	FileName       string
 	BlockID        int32
 	DataNodeNumber int32
+	//IpAddr         string //TODO
 }
 
 // In memory database for storing blockReport results. blockReport methods are

@@ -14,7 +14,7 @@ func (s *Server) SendBlockReport(ctx context.Context, in *pb.BlockReport) (*pb.B
 		BlockID:        in.BlockID,
 		DataNodeNumber: in.DataNodeNumber,
 	}
-	Database1.Add(*data)
+	BlockReportDatabase.Add(*data)
 
 	return &pb.BlockReport{
 		FileName: data.FileName,

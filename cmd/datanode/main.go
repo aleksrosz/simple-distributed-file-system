@@ -7,15 +7,20 @@ import (
 
 func main() {
 	create, err := datanode.Create(datanode.Config{
-		DataDir: "./test_directory/dataNode01",
-		Debug:   true,
-		Port:    "8080",
-		Addres:  "0.0.0.0",
+		DataDir:       "./test_directory/dataNode01",
+		Debug:         true,
+		Port:          "8081",
+		Addres:        "0.0.0.0",
+		LeaderAddress: "0.0.0.0",
+		LeaderPort:    "8080",
 	})
 
 	if err != nil {
 		return
 	}
 	fmt.Println(create)
+
+	go datanode.ListenHealthCheckServer("0.0.0.0:8081")
+	datanode.SendBlockReport("0.0.0.0:8080")
 
 }
