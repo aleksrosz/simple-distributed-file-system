@@ -1,4 +1,4 @@
-package client
+package main
 
 // TODO It should be possible use client to create datanodes and metadatanode on another nodes, with parameters like
 // replication
@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// Parse command-line flags
-	serverIP := flag.String("s", "", "Server IP address")
+	serverIP := flag.String("s", "127.0.0.1", "Server IP address")
 	port := flag.String("p", "8080", "Network port")
 	filePath := flag.String("f", "", "Path of file to send")
 	flag.Parse()

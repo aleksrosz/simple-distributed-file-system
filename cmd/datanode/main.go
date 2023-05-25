@@ -10,7 +10,7 @@ func main() {
 		DataDir: "./test_directory/dataNode01",
 		Debug:   true,
 		Port:    "8080",
-		Addres:  "0.0.0.0",
+		Addres:  "127.0.0.1",
 	})
 
 	if err != nil {

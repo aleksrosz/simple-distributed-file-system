@@ -2,13 +2,17 @@ package datanode
 
 import (
 	pb "aleksrosz/simple-distributed-file-system/proto"
+	"fmt"
+	"log"
+	"net"
+	"sync"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
-	"sync"
 )
 
 var Debug bool //TODO debug
+var listener net.Listener
 
 type DataNodeState struct {
 	mutex  sync.Mutex
@@ -46,5 +50,27 @@ func Create(conf Config) (*DataNodeState, error) {
 
 	createBlockReport(c)
 
+	listener, _ = net.Listen("tcp", ":8080")
+	if err != nil {
+		log.Fatal(err)
+	}
+	go listenForCommands()
+
+	fmt.Println("Server started. Listening on port 8080...")
+
 	return &dn, nil
+}
+
+func listenForCommands() {
+	for {
+		// Accept a new connection
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		buffer := make([]byte, 1024)
+		conn.Read(buffer)
+		// Handle the connection in a separate goroutine
+	}
 }
