@@ -3,6 +3,7 @@ package metadatanode
 import (
 	pb "aleksrosz/simple-distributed-file-system/proto"
 	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -16,9 +17,9 @@ var Debug bool //TODO debug
 type MetadataNodeState struct {
 	mutex             sync.Mutex
 	NodeID            string
-	HeartbeatInterval time.Duration //TODO heartbeat
 	Addr              string
-	LeaderAddress     string
+	LeaderAddress     string //Currently there is only one leader (metadatanode)
+	HeartbeatInterval time.Duration
 }
 
 type Server struct {
@@ -45,17 +46,34 @@ func ListenBlockReportServiceServer(adres string) {
 
 }
 
-func QueryHealthCheck(adres string, timeInSec time.Duration) {
+func QueryHealthCheck(adres string, dataNodeNumber int32, timeInSec time.Duration) {
 	//Connect for health check
 	for {
 		conn, err := grpc.Dial(adres, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			log.Fatal("failed to connect", err)
+			log.Fatal("TEST TEST failed to connect", err)
 		}
 		defer conn.Close()
 		c := pb2.NewHealthClient(conn)
-		data := queryHealthCheck(c)
+		data, err := queryHealthCheck(c)
+		if err != nil {
+			log.Printf("Error: %v", err)
+		}
+		log.Printf("Response from server: %v", data)
+		fmt.Println(adres)
+		if data == nil {
+			data = &pb2.HealthCheckResponse{
+				Status:         0,
+				DataNodeNumber: dataNodeNumber,
+				IpAddress:      adres,
+			}
+		}
 		addHealthCheckValuesToDatabase(data.DataNodeNumber, data)
+		test, test2 := DatanodeDatabase.Get(0)
+		fmt.Println(test.IpAddr)
+		fmt.Println(test2)
+		fmt.Println(test.DataNodeNumber)
+		fmt.Println(test.Status)
 		time.Sleep(timeInSec * time.Second)
 	}
 }
@@ -65,6 +83,7 @@ func Create(conf Config) (*MetadataNodeState, error) {
 	var dn MetadataNodeState
 
 	dn.Addr = conf.Addres + ":" + "8080"
+	dn.HeartbeatInterval = 5 // Time in sec
 
 	return &dn, nil
 }

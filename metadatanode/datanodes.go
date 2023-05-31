@@ -1,9 +1,12 @@
 package metadatanode
 
-import "sync"
+import (
+	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
+	"sync"
+)
 
 type DatanodeItem struct {
-	Status         []int //We store last 3 statuses
+	Status         []pb2.HealthCheckResponse_ServingStatus //We store last 3 statuses
 	DataNodeNumber int32
 	IpAddr         string
 	LastContact    int64

@@ -19,6 +19,9 @@ func main() {
 	fmt.Println(metadatanode1)
 
 	go metadatanode.ListenBlockReportServiceServer("0.0.0.0:8080")
-	metadatanode.QueryHealthCheck("0.0.0.0:8081", metadatanode1.HeartbeatInterval)
+
+	// Do healthchecks for DataNodes from var DatanodeDatabase
+
+	metadatanode.QueryHealthCheck("0.0.0.0:8081", 0, metadatanode1.HeartbeatInterval)
 
 }
