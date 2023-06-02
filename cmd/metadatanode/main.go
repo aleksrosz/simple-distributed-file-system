@@ -20,8 +20,10 @@ func main() {
 
 	go metadatanode.ListenBlockReportServiceServer("0.0.0.0:8080")
 
-	// Do healthchecks for DataNodes from var DatanodeDatabase
-
-	metadatanode.QueryHealthCheck("0.0.0.0:8081", 0, metadatanode1.HeartbeatInterval)
-
+	//TODO Integration with DataNodes database to query nodes from database
+	data, err := metadatanode.QueryHealthCheck("0.0.0.0:8081", 0)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(data)
 }

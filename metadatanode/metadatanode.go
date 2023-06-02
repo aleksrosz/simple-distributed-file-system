@@ -46,36 +46,28 @@ func ListenBlockReportServiceServer(adres string) {
 
 }
 
-func QueryHealthCheck(adres string, dataNodeNumber int32, timeInSec time.Duration) {
+func QueryHealthCheck(adres string, dataNodeNumber int32) (*pb2.HealthCheckResponse, error) {
 	//Connect for health check
-	for {
-		conn, err := grpc.Dial(adres, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			log.Fatal("TEST TEST failed to connect", err)
-		}
-		defer conn.Close()
-		c := pb2.NewHealthClient(conn)
-		data, err := queryHealthCheck(c)
-		if err != nil {
-			log.Printf("Error: %v", err)
-		}
-		log.Printf("Response from server: %v", data)
-		fmt.Println(adres)
-		if data == nil {
-			data = &pb2.HealthCheckResponse{
-				Status:         0,
-				DataNodeNumber: dataNodeNumber,
-				IpAddress:      adres,
-			}
-		}
-		addHealthCheckValuesToDatabase(data.DataNodeNumber, data)
-		test, test2 := DatanodeDatabase.Get(0)
-		fmt.Println(test.IpAddr)
-		fmt.Println(test2)
-		fmt.Println(test.DataNodeNumber)
-		fmt.Println(test.Status)
-		time.Sleep(timeInSec * time.Second)
+	conn, err := grpc.Dial(adres, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal("TEST TEST failed to connect", err)
 	}
+	defer conn.Close()
+	c := pb2.NewHealthClient(conn)
+	data, err := queryHealthCheck(c)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	}
+	log.Printf("Response from server: %v", data)
+	fmt.Println(adres)
+	if data == nil {
+		data = &pb2.HealthCheckResponse{
+			Status:         0,
+			DataNodeNumber: dataNodeNumber,
+			IpAddress:      adres,
+		}
+	}
+	return data, err
 }
 
 // Create a new MetadataNode
