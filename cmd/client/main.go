@@ -19,7 +19,7 @@ func main() {
 	// Parse command-line flags
 	serverIP := flag.String("s", "127.0.0.1", "Server IP address")
 	port := flag.String("p", "8080", "Network port")
-	filePath := flag.String("f", "", "Path of file to send")
+	filePath := flag.String("f", "default.txt", "Path of file to send")
 	flag.Parse()
 
 	// Check if required flags are set

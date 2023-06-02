@@ -36,6 +36,7 @@ func Create(conf Config) (*DataNodeState, error) {
 	dataDir = conf.DataDir
 	defer conn.Close()
 	c := pb.NewBlockReportServiceClient(conn)
+	//clientHandler := pb.NewHandleFileRequestsService(conn)
 	createBlockReport(c)
 	listener, _ = net.Listen("tcp", ":8085")
 	if err != nil {
@@ -58,10 +59,14 @@ func ListenForCommands() {
 			log.Println(err)
 			continue
 		}
-		buffer := make([]byte, 1024)
+		var fileSize = 1024
+		buffer := make([]byte, fileSize)
 		conn.Read(buffer)
 		chunkNum := 0
 		chunkSize := 128
+		var chunkCount = fileSize / chunkSize
+		var chunkPadding = chunkSize - (fileSize % chunkSize)
+		fmt.Println("padding: ", chunkPadding)
 		for {
 			chunkName := fmt.Sprintf("%s.%03d", "x.txt", chunkNum)
 			path := filepath.Join(dataDir, chunkName)
@@ -76,7 +81,7 @@ func ListenForCommands() {
 				fmt.Println(err)
 			}
 			chunkNum++
-			if chunkNum >= 7 {
+			if chunkNum >= chunkCount {
 				break
 			}
 		}
