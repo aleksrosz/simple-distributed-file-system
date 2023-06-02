@@ -45,6 +45,7 @@ func main() {
 	defer conn.Close()
 
 	// Send the file data to the server
+
 	buf := make([]byte, 1024)
 	for {
 		n, err := file.Read(buf)

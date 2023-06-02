@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -13,6 +15,7 @@ import (
 
 var Debug bool //TODO debug
 var listener net.Listener
+var dataDir string
 
 type DataNodeState struct {
 	mutex  sync.Mutex
@@ -25,45 +28,31 @@ type DataNodeState struct {
 // Create a new datanode
 func Create(conf Config) (*DataNodeState, error) {
 	var dn DataNodeState
-
 	dn.Addr = conf.Addres + ":" + conf.Port
-	// TODO Networking
-	//dn.heartbeatInterval = conf.HeartbeatInterval
-	//dn.LeaderAddress = conf.LeaderAddress
-
-	// TODO gRPC
-	//lis, err := net.Listen("tcp", dn.Addr)
-	//	if err != nil {
-	//		log.Fatalf("failed to listen: %v", err)
-	//	}
-
-	//go dn.grpcstart(conf.Listener) // Start the RPC server https://grpc.io/
-	//go dn.Heartbeat() // Check what is the best way to do this.
-
-	conn, err := grpc.Dial(dn.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var conn, err = grpc.Dial(dn.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal("filed to connect", err)
 	}
+	dataDir = conf.DataDir
 	defer conn.Close()
-
 	c := pb.NewBlockReportServiceClient(conn)
-
 	createBlockReport(c)
-
-	listener, _ = net.Listen("tcp", ":8080")
+	listener, _ = net.Listen("tcp", ":8085")
 	if err != nil {
 		log.Fatal(err)
 	}
-	go listenForCommands()
-
+	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
+		create(dataDir)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println("Server started. Listening on port 8080...")
-
 	return &dn, nil
 }
 
-func listenForCommands() {
+func ListenForCommands() {
 	for {
-		// Accept a new connection
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Println(err)
@@ -71,6 +60,31 @@ func listenForCommands() {
 		}
 		buffer := make([]byte, 1024)
 		conn.Read(buffer)
-		// Handle the connection in a separate goroutine
+		chunkNum := 0
+		chunkSize := 128
+		for {
+			chunkName := fmt.Sprintf("%s.%03d", "x.txt", chunkNum)
+			path := filepath.Join(dataDir, chunkName)
+			chunkFile, err := os.Create(path)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer chunkFile.Close()
+			_, err = chunkFile.Write(buffer[chunkNum*chunkSize : (chunkNum+1)*chunkSize])
+			if err != nil {
+				fmt.Println(err)
+			}
+			chunkNum++
+			if chunkNum >= 7 {
+				break
+			}
+		}
 	}
+}
+func create(p string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(p), 0770); err != nil {
+		return nil, err
+	}
+	return os.Create(p)
 }
