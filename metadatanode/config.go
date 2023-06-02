@@ -1,6 +1,8 @@
 package metadatanode
 
-import "net"
+import (
+	"net"
+)
 
 type Config struct {
 	DataDir  string
@@ -8,5 +10,4 @@ type Config struct {
 	Port     string
 	Addres   string
 	Listener net.Listener
-	//HeartbeatInterval time.Duration //TODO Heartbeat
 }
