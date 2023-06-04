@@ -2,6 +2,8 @@ package datanode
 
 import (
 	pb "aleksrosz/simple-distributed-file-system/proto"
+	"bytes"
+	"errors"
 
 	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
 	"fmt"
@@ -29,6 +31,61 @@ type DataNodeState struct {
 
 type healthCheckServer struct {
 	pb2.HealthServer
+}
+
+type handleFileRequestServiceServer struct {
+	pb.HandleFileRequestsServiceServer
+}
+
+type FileCommand struct {
+	fileCommand int32
+	fileName    string
+	fileSize    int
+	fileData    bytes.Buffer
+}
+
+type FileResponse struct {
+	message  string
+	fileName string
+	fileSize int
+	fileData bytes.Buffer
+}
+
+func (s *handleFileRequestServiceServer) HandleFileService(ctx interface{}, fc *FileCommand) (FileResponse, error) {
+	// 0 = odczyt  1 = zapis  -1 = usun
+	switch fc.fileCommand {
+	case 0:
+		{
+			fileData, _ := asembleFile(fc.fileName)
+			return FileResponse{
+				message:  "file retrieved",
+				fileName: fc.fileName,
+				fileSize: fileData.Len(),
+				fileData: fileData,
+			}, nil
+		}
+	case 1:
+		{
+			splitFile(fc.fileName, fc.fileData, fc.fileSize)
+			return FileResponse{
+				message:  "file saved",
+				fileName: fc.fileName,
+				fileSize: 0,
+			}, nil
+		}
+	case -1:
+		{
+			deleteChunks(fc.fileName)
+			return FileResponse{
+				message:  "file deleted",
+				fileName: fc.fileName,
+				fileSize: 0,
+			}, nil
+		}
+
+	}
+	unknownCommandErr := errors.New("unknown command")
+	return FileResponse{}, unknownCommandErr
 }
 
 func ListenHealthCheckServer(adres string) {
@@ -71,41 +128,41 @@ func Create(conf Config) (*DataNodeState, error) {
 	return &dn, nil
 }
 
-func ListenForCommands() {
+func asembleFile(fileName string) (bytes.Buffer, error) {
+	b := bytes.Buffer{}
+	return b, nil
+}
+
+func splitFile(fileName string, fileData bytes.Buffer, fileSize int) {
+	chunkNum := 0
+	chunkSize := 128
+	var chunkCount = fileSize / chunkSize
+	var chunkPadding = chunkSize - (fileSize % chunkSize)
+	fmt.Println("padding: ", chunkPadding)
 	for {
-		conn, err := listener.Accept()
+		chunkName := fmt.Sprintf("%s.%03d", fileName, chunkNum)
+		path := filepath.Join(dataDir, chunkName)
+		chunkFile, err := os.Create(path)
 		if err != nil {
-			log.Println(err)
-			continue
+			fmt.Println(err)
+			return
 		}
-		var fileSize = 1024
-		buffer := make([]byte, fileSize)
-		conn.Read(buffer)
-		chunkNum := 0
-		chunkSize := 128
-		var chunkCount = fileSize / chunkSize
-		var chunkPadding = chunkSize - (fileSize % chunkSize)
-		fmt.Println("padding: ", chunkPadding)
-		for {
-			chunkName := fmt.Sprintf("%s.%03d", "x.txt", chunkNum)
-			path := filepath.Join(dataDir, chunkName)
-			chunkFile, err := os.Create(path)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer chunkFile.Close()
-			_, err = chunkFile.Write(buffer[chunkNum*chunkSize : (chunkNum+1)*chunkSize])
-			if err != nil {
-				fmt.Println(err)
-			}
-			chunkNum++
-			if chunkNum >= chunkCount {
-				break
-			}
+		defer chunkFile.Close()
+		_, err = chunkFile.Write(fileData.Bytes()[chunkNum*chunkSize : (chunkNum+1)*chunkSize])
+		if err != nil {
+			fmt.Println(err)
+		}
+		chunkNum++
+		if chunkNum >= chunkCount {
+			break
 		}
 	}
 }
+
+func deleteChunks(fileName string) {
+	fmt.Println("delete: ", fileName)
+}
+
 func create(p string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(p), 0770); err != nil {
 		return nil, err

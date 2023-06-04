@@ -15,6 +15,9 @@ message FileCommand {
 
 message FileResponse {
 	string message = 1;
+	string fileName 		= 2;
+	int32 fileSize 			= 3;
+	bytes fileData 			= 4;
 }
 
 service HandleFileRequestsService {
