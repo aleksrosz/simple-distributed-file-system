@@ -21,3 +21,6 @@ MetaDatanode:
 1. In-memory database of working DataNodes in DFS.
 2. In-memory database of blockreports containing metadata about files.
 3. Query DataNodes about their health status and update database according to that.
+
+
+![architecture](https://github.com/aleksrosz/simple-distributed-file-system/assets/25863755/aed41c01-79e1-47e4-916e-047613f4a0a1)
