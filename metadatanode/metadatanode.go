@@ -2,40 +2,40 @@ package metadatanode
 
 import (
 	pb "aleksrosz/simple-distributed-file-system/proto"
+	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
+	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 var Debug bool //TODO debug
 
 type MetadataNodeState struct {
-	mutex  sync.Mutex
-	NodeID string
-	//heartbeatInterval time.Duration //TODO heartbeat
-	Addr          string
-	LeaderAddress string
+	mutex             sync.Mutex
+	NodeID            string
+	Addr              string
+	LeaderAddress     string //Currently there is only one leader (metadatanode)
+	HeartbeatInterval time.Duration
 }
 
 type Server struct {
 	pb.BlockReportServiceServer
 }
 
-// Create a new MetadataNode
-func Create(conf Config) (*MetadataNodeState, error) {
-	var dn MetadataNodeState
+var BlockReportDatabase = NewDatabase()
+var DatanodeDatabase = NewDatanodeDatabase()
 
-	dn.Addr = conf.Addres + ":" + conf.Port
-	//dn.heartbeatInterval = conf.HeartbeatInterval //TODO heartbeat
-
-	// TODO gRPC
-	lis, err := net.Listen("tcp", dn.Addr)
+func ListenBlockReportServiceServer(adres string) {
+	lis, err := net.Listen("tcp", adres)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	log.Printf("Listening on %s", dn.Addr)
+	log.Printf("Listening on %s", adres)
 	s := grpc.NewServer()
 	pb.RegisterBlockReportServiceServer(s, &Server{})
 
@@ -44,11 +44,38 @@ func Create(conf Config) (*MetadataNodeState, error) {
 		log.Fatalf("failed to serve: %v", err)
 	}
 
-	//go dn.grpcstart(conf.Listener) // Start the RPC server https://grpc.io/
-	//go dn.Heartbeat() //TODO heartbeat
+}
 
-	// create in memory database for storing blockReport structs
-	//blockReportStore := New()
+func QueryHealthCheck(adres string, dataNodeNumber int32) (*pb2.HealthCheckResponse, error) {
+	//Connect for health check
+	conn, err := grpc.Dial(adres, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal("TEST TEST failed to connect", err)
+	}
+	defer conn.Close()
+	c := pb2.NewHealthClient(conn)
+	data, err := queryHealthCheck(c)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	}
+	log.Printf("Response from server: %v", data)
+	fmt.Println(adres)
+	if data == nil {
+		data = &pb2.HealthCheckResponse{
+			Status:         0,
+			DataNodeNumber: dataNodeNumber,
+			IpAddress:      adres,
+		}
+	}
+	return data, err
+}
+
+// Create a new MetadataNode
+func Create(conf Config) (*MetadataNodeState, error) {
+	var dn MetadataNodeState
+
+	dn.Addr = conf.Addres + ":" + "8080"
+	dn.HeartbeatInterval = 5 // Time in sec
 
 	return &dn, nil
 }
