@@ -129,8 +129,23 @@ func Create(conf Config) (*DataNodeState, error) {
 }
 
 func asembleFile(fileName string) (bytes.Buffer, error) {
-	b := bytes.Buffer{}
-	return b, nil
+	fileData := bytes.Buffer{}
+
+	chunkNum := 0
+	chunkSize := 128
+	for {
+		chunkName := fmt.Sprintf("%s.%03d", fileName, chunkNum)
+		path := filepath.Join(dataDir, chunkName)
+		chunkFile, err := os.Open(path)
+		if err != nil {
+			break
+		}
+		buffer := make([]byte, chunkSize)
+		chunkFile.Read(buffer)
+		fileData.Write(buffer)
+		chunkNum++
+	}
+	return fileData, nil
 }
 
 func splitFile(fileName string, fileData bytes.Buffer, fileSize int) {
@@ -161,6 +176,15 @@ func splitFile(fileName string, fileData bytes.Buffer, fileSize int) {
 
 func deleteChunks(fileName string) {
 	fmt.Println("delete: ", fileName)
+	chunkNum := 0
+	for {
+		chunkName := fmt.Sprintf("%s.%03d", fileName, chunkNum)
+		path := filepath.Join(dataDir, chunkName)
+		e := os.Remove(path)
+		if e != nil {
+			return
+		}
+	}
 }
 
 func create(p string) (*os.File, error) {
