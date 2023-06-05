@@ -3,6 +3,7 @@ package datanode
 import (
 	pb "aleksrosz/simple-distributed-file-system/proto"
 	"bytes"
+	"context"
 	"errors"
 
 	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
@@ -51,12 +52,12 @@ type FileResponse struct {
 	fileData bytes.Buffer
 }
 
-func (s *handleFileRequestServiceServer) HandleFileService(ctx interface{}, fc *FileCommand) (FileResponse, error) {
+func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, in *pb.FileCommand) (*pb.FileResponse, error) {
 	// 0 = odczyt  1 = zapis  -1 = usun
-	switch fc.fileCommand {
+	switch in.FileCommand {
 	case 0:
 		{
-			fileData, err := assembleFile(fc.fileName)
+			fileData, err := assembleFile(in.FileName)
 			var retmessage string
 			if fileData.Len() == 0 {
 				retmessage = "no such file"
@@ -64,35 +65,53 @@ func (s *handleFileRequestServiceServer) HandleFileService(ctx interface{}, fc *
 				retmessage = "file retrieved"
 			}
 
-			return FileResponse{
-				message:  retmessage,
-				fileName: fc.fileName,
-				fileSize: fileData.Len(),
-				fileData: fileData,
+			return &pb.FileResponse{
+				Message:  retmessage,
+				FileName: in.FileName,
+				FileSize: int32(fileData.Len()),
+				FileData: fileData.Bytes(),
 			}, err
 		}
 	case 1:
 		{
-			err := splitFile(fc.fileName, fc.fileData, fc.fileSize)
-			return FileResponse{
-				message:  "file saved",
-				fileName: fc.fileName,
-				fileSize: 0,
+			err := splitFile(in.FileName, in.FileData, int(in.FileSize))
+			return &pb.FileResponse{
+				Message:  "file saved",
+				FileName: in.FileName,
+				FileSize: 0,
 			}, err
 		}
 	case -1:
 		{
-			deleteChunks(fc.fileName)
-			return FileResponse{
-				message:  "file deleted",
-				fileName: fc.fileName,
-				fileSize: 0,
+			deleteChunks(in.FileName)
+			return &pb.FileResponse{
+				Message:  "file deleted",
+				FileName: in.FileName,
+				FileSize: 0,
 			}, nil
 		}
 
 	}
 	unknownCommandErr := errors.New("unknown command")
-	return FileResponse{}, unknownCommandErr
+	return &pb.FileResponse{}, unknownCommandErr
+}
+
+func ListenFileRequestServiceServer(adres string) {
+	lis, err := net.Listen("tcp", adres)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	log.Printf("Listening on %s", adres)
+	s := grpc.NewServer()
+	pb.RegisterHandleFileRequestsServiceServer(s, &handleFileRequestServiceServer{})
+	// TODO RFC czemu to jest podkreślane
+
+	err = s.Serve(lis)
+	if err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
 }
 
 func ListenHealthCheckServer(adres string) {
@@ -155,7 +174,7 @@ func assembleFile(fileName string) (bytes.Buffer, error) {
 	return fileData, nil
 }
 
-func splitFile(fileName string, fileData bytes.Buffer, fileSize int) error {
+func splitFile(fileName string, fileData []byte, fileSize int) error {
 	chunkNum := 0
 	chunkSize := 128
 	var chunkCount = fileSize / chunkSize
@@ -170,7 +189,7 @@ func splitFile(fileName string, fileData bytes.Buffer, fileSize int) error {
 			return err
 		}
 		defer chunkFile.Close()
-		_, err = chunkFile.Write(fileData.Bytes()[chunkNum*chunkSize : (chunkNum+1)*chunkSize])
+		_, err = chunkFile.Write(fileData[chunkNum*chunkSize : (chunkNum+1)*chunkSize])
 		if err != nil {
 			fmt.Println(err)
 			return err
