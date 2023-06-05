@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	HandleFileRequestsService_SendFileRequest_FullMethodName   = "/fileCommands.HandleFileRequestsService/SendFileRequest"
 	HandleFileRequestsService_HandleFileService_FullMethodName = "/fileCommands.HandleFileRequestsService/HandleFileService"
 )
 
@@ -26,6 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HandleFileRequestsServiceClient interface {
+	SendFileRequest(ctx context.Context, in *FileCommand, opts ...grpc.CallOption) (*FileResponse, error)
 	HandleFileService(ctx context.Context, in *FileCommand, opts ...grpc.CallOption) (*FileResponse, error)
 }
 
@@ -35,6 +37,15 @@ type handleFileRequestsServiceClient struct {
 
 func NewHandleFileRequestsServiceClient(cc grpc.ClientConnInterface) HandleFileRequestsServiceClient {
 	return &handleFileRequestsServiceClient{cc}
+}
+
+func (c *handleFileRequestsServiceClient) SendFileRequest(ctx context.Context, in *FileCommand, opts ...grpc.CallOption) (*FileResponse, error) {
+	out := new(FileResponse)
+	err := c.cc.Invoke(ctx, HandleFileRequestsService_SendFileRequest_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *handleFileRequestsServiceClient) HandleFileService(ctx context.Context, in *FileCommand, opts ...grpc.CallOption) (*FileResponse, error) {
@@ -50,6 +61,7 @@ func (c *handleFileRequestsServiceClient) HandleFileService(ctx context.Context,
 // All implementations must embed UnimplementedHandleFileRequestsServiceServer
 // for forward compatibility
 type HandleFileRequestsServiceServer interface {
+	SendFileRequest(context.Context, *FileCommand) (*FileResponse, error)
 	HandleFileService(context.Context, *FileCommand) (*FileResponse, error)
 	mustEmbedUnimplementedHandleFileRequestsServiceServer()
 }
@@ -58,6 +70,9 @@ type HandleFileRequestsServiceServer interface {
 type UnimplementedHandleFileRequestsServiceServer struct {
 }
 
+func (UnimplementedHandleFileRequestsServiceServer) SendFileRequest(context.Context, *FileCommand) (*FileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendFileRequest not implemented")
+}
 func (UnimplementedHandleFileRequestsServiceServer) HandleFileService(context.Context, *FileCommand) (*FileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleFileService not implemented")
 }
@@ -73,6 +88,24 @@ type UnsafeHandleFileRequestsServiceServer interface {
 
 func RegisterHandleFileRequestsServiceServer(s grpc.ServiceRegistrar, srv HandleFileRequestsServiceServer) {
 	s.RegisterService(&HandleFileRequestsService_ServiceDesc, srv)
+}
+
+func _HandleFileRequestsService_SendFileRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileCommand)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandleFileRequestsServiceServer).SendFileRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandleFileRequestsService_SendFileRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandleFileRequestsServiceServer).SendFileRequest(ctx, req.(*FileCommand))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _HandleFileRequestsService_HandleFileService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -100,6 +133,10 @@ var HandleFileRequestsService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "fileCommands.HandleFileRequestsService",
 	HandlerType: (*HandleFileRequestsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SendFileRequest",
+			Handler:    _HandleFileRequestsService_SendFileRequest_Handler,
+		},
 		{
 			MethodName: "HandleFileService",
 			Handler:    _HandleFileRequestsService_HandleFileService_Handler,

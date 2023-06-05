@@ -21,5 +21,6 @@ message FileResponse {
 }
 
 service HandleFileRequestsService {
+	rpc SendFileRequest (FileCommand) returns (FileResponse);
 	rpc HandleFileService (FileCommand) returns (FileResponse);
 }

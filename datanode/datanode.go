@@ -56,22 +56,29 @@ func (s *handleFileRequestServiceServer) HandleFileService(ctx interface{}, fc *
 	switch fc.fileCommand {
 	case 0:
 		{
-			fileData, _ := asembleFile(fc.fileName)
+			fileData, err := assembleFile(fc.fileName)
+			var retmessage string
+			if fileData.Len() == 0 {
+				retmessage = "no such file"
+			} else {
+				retmessage = "file retrieved"
+			}
+
 			return FileResponse{
-				message:  "file retrieved",
+				message:  retmessage,
 				fileName: fc.fileName,
 				fileSize: fileData.Len(),
 				fileData: fileData,
-			}, nil
+			}, err
 		}
 	case 1:
 		{
-			splitFile(fc.fileName, fc.fileData, fc.fileSize)
+			err := splitFile(fc.fileName, fc.fileData, fc.fileSize)
 			return FileResponse{
 				message:  "file saved",
 				fileName: fc.fileName,
 				fileSize: 0,
-			}, nil
+			}, err
 		}
 	case -1:
 		{
@@ -128,7 +135,7 @@ func Create(conf Config) (*DataNodeState, error) {
 	return &dn, nil
 }
 
-func asembleFile(fileName string) (bytes.Buffer, error) {
+func assembleFile(fileName string) (bytes.Buffer, error) {
 	fileData := bytes.Buffer{}
 
 	chunkNum := 0
@@ -148,7 +155,7 @@ func asembleFile(fileName string) (bytes.Buffer, error) {
 	return fileData, nil
 }
 
-func splitFile(fileName string, fileData bytes.Buffer, fileSize int) {
+func splitFile(fileName string, fileData bytes.Buffer, fileSize int) error {
 	chunkNum := 0
 	chunkSize := 128
 	var chunkCount = fileSize / chunkSize
@@ -160,18 +167,20 @@ func splitFile(fileName string, fileData bytes.Buffer, fileSize int) {
 		chunkFile, err := os.Create(path)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 		defer chunkFile.Close()
 		_, err = chunkFile.Write(fileData.Bytes()[chunkNum*chunkSize : (chunkNum+1)*chunkSize])
 		if err != nil {
 			fmt.Println(err)
+			return err
 		}
 		chunkNum++
 		if chunkNum >= chunkCount {
 			break
 		}
 	}
+	return nil
 }
 
 func deleteChunks(fileName string) {

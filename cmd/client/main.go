@@ -8,11 +8,16 @@ package main
 // Tell which file should be uploaded to DFS
 
 import (
+	pb "aleksrosz/simple-distributed-file-system/proto"
+	"bytes"
+	"context"
 	"flag"
 	"fmt"
-	"io"
-	"net"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func main() {
@@ -20,7 +25,13 @@ func main() {
 	serverIP := flag.String("s", "127.0.0.1", "Server IP address")
 	port := flag.String("p", "8080", "Network port")
 	filePath := flag.String("f", "default.txt", "Path of file to send")
+	commandString := flag.String("c", "write", "command to be executed: write, read, delete")
 	flag.Parse()
+	var m map[string]int
+	m["write"] = 1
+	m["read"] = 0
+	m["delete"] = -1
+	commandNumber := m[*commandString]
 
 	// Check if required flags are set
 	if *serverIP == "" || *filePath == "" {
@@ -28,6 +39,43 @@ func main() {
 		return
 	}
 
+	array := strings.Split(*filePath, "/")
+	fileName := array[len(array)-1]
+	// Connect to the server
+	nodeConnection, err := grpc.Dial(*serverIP+":"+*port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer nodeConnection.Close()
+	fileRequestClient := pb.NewHandleFileRequestsServiceClient(nodeConnection)
+	if commandNumber == -1 {
+		request := pb.FileCommand{
+			FileCommand: int32(commandNumber),
+			FileName:    fileName,
+			FileSize:    0,
+			FileData:    nil,
+		}
+		fileRequestClient.SendFileRequest(context.Background(), &request)
+		return
+	}
+
+	if commandNumber == 0 {
+		request := pb.FileCommand{
+			FileCommand: int32(commandNumber),
+			FileName:    fileName,
+			FileSize:    0,
+			FileData:    nil,
+		}
+		response, err := fileRequestClient.SendFileRequest(context.Background(), &request)
+		if err != nil {
+			println(err)
+			return
+		}
+		file, err := create(fileName)
+		file.Write(response.FileData)
+		return
+	}
 	// Open the input file
 	file, err := os.Open(*filePath)
 	if err != nil {
@@ -36,26 +84,29 @@ func main() {
 	}
 	defer file.Close()
 
-	// Connect to the server
-	conn, err := net.Dial("tcp", *serverIP+":"+*port)
+	// Send the file data to the server
+	fileInfo, err := file.Stat()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	defer conn.Close()
+	buf := make([]byte, fileInfo.Size())
 
-	// Send the file data to the server
+	var bigBuff bytes.Buffer
+	bigBuff.Read(buf)
 
-	buf := make([]byte, 1024)
-	for {
-		n, err := file.Read(buf)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println(err)
-			}
-			break
-		}
-		conn.Write(buf[:n])
+	request := pb.FileCommand{
+		FileCommand: int32(commandNumber),
+		FileName:    fileName,
+		FileSize:    int32(fileInfo.Size()),
+		FileData:    buf,
 	}
+	fileRequestClient.SendFileRequest(context.Background(), &request)
 	fmt.Printf("File '%s' sent to server at %s:%s\n", *filePath, *serverIP, *port)
+}
+func create(p string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(p), 0770); err != nil {
+		return nil, err
+	}
+	return os.Create(p)
 }
