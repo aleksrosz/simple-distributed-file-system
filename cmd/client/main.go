@@ -27,7 +27,7 @@ func main() {
 	filePath := flag.String("f", "default.txt", "Path of file to send")
 	commandString := flag.String("c", "write", "command to be executed: write, read, delete")
 	flag.Parse()
-	var m map[string]int
+	m := make(map[string]int)
 	m["write"] = 1
 	m["read"] = 0
 	m["delete"] = -1
