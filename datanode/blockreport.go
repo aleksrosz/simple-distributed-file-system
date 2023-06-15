@@ -1,7 +1,7 @@
 package datanode
 
 import (
-	pb "aleksrosz/simple-distributed-file-system/proto"
+	"aleksrosz/simple-distributed-file-system/proto/block_report"
 	"context"
 	"log"
 )
@@ -13,10 +13,10 @@ type BlockReportItem struct {
 	DataNodeNumber string
 }
 
-func sendBlockReport(c pb.BlockReportServiceClient) {
+func sendBlockReport(c block_report.BlockReportServiceClient) {
 	log.Println("---createBlockReport---")
 
-	report := &pb.BlockReport{
+	report := &block_report.BlockReport{
 		FileName:       "test",
 		BlockID:        1,
 		DataNodeNumber: 1,

@@ -1,7 +1,8 @@
 package datanode
 
 import (
-	pb "aleksrosz/simple-distributed-file-system/proto"
+	"aleksrosz/simple-distributed-file-system/proto/block_report"
+	"aleksrosz/simple-distributed-file-system/proto/file_request"
 	"bytes"
 	"context"
 	"errors"
@@ -35,7 +36,7 @@ type healthCheckServer struct {
 }
 
 type handleFileRequestServiceServer struct {
-	pb.HandleFileRequestsServiceServer
+	file_request.HandleFileRequestsServiceServer
 }
 
 type FileCommand struct {
@@ -52,7 +53,7 @@ type FileResponse struct {
 	fileData bytes.Buffer
 }
 
-func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, in *pb.FileCommand) (*pb.FileResponse, error) {
+func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, in *file_request.FileCommand) (*file_request.FileResponse, error) {
 	// 0 = odczyt  1 = zapis  -1 = usun
 	switch in.FileCommand {
 	case 0:
@@ -65,7 +66,7 @@ func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, 
 				retmessage = "file retrieved"
 			}
 
-			return &pb.FileResponse{
+			return &file_request.FileResponse{
 				Message:  retmessage,
 				FileName: in.FileName,
 				FileSize: int32(fileData.Len()),
@@ -75,7 +76,7 @@ func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, 
 	case 1:
 		{
 			err := splitFile(in.FileName, in.FileData, int(in.FileSize))
-			return &pb.FileResponse{
+			return &file_request.FileResponse{
 				Message:  "file saved",
 				FileName: in.FileName,
 				FileSize: 0,
@@ -84,7 +85,7 @@ func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, 
 	case -1:
 		{
 			deleteChunks(in.FileName)
-			return &pb.FileResponse{
+			return &file_request.FileResponse{
 				Message:  "file deleted",
 				FileName: in.FileName,
 				FileSize: 0,
@@ -93,7 +94,7 @@ func (s *handleFileRequestServiceServer) HandleFileService(ctx context.Context, 
 
 	}
 	unknownCommandErr := errors.New("unknown command")
-	return &pb.FileResponse{}, unknownCommandErr
+	return &file_request.FileResponse{}, unknownCommandErr
 }
 
 func ListenFileRequestServiceServer(adres string) {
@@ -104,7 +105,7 @@ func ListenFileRequestServiceServer(adres string) {
 
 	log.Printf("Listening on %s", adres)
 	s := grpc.NewServer()
-	pb.RegisterHandleFileRequestsServiceServer(s, &handleFileRequestServiceServer{})
+	file_request.RegisterHandleFileRequestsServiceServer(s, &handleFileRequestServiceServer{})
 	// TODO RFC czemu to jest podkreślane
 
 	err = s.Serve(lis)
@@ -140,7 +141,7 @@ func SendBlockReport(adres string) {
 			log.Fatal("failed to connect", err)
 		}
 		defer conn.Close()
-		c := pb.NewBlockReportServiceClient(conn)
+		c := block_report.NewBlockReportServiceClient(conn)
 		sendBlockReport(c)
 		time.Sleep(5 * time.Second)
 	}

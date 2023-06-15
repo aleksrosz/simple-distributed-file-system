@@ -8,7 +8,7 @@ package main
 // Tell which file should be uploaded to DFS
 
 import (
-	pb "aleksrosz/simple-distributed-file-system/proto"
+	"aleksrosz/simple-distributed-file-system/proto/file_request"
 	"bytes"
 	"context"
 	"flag"
@@ -48,9 +48,9 @@ func main() {
 		return
 	}
 	defer nodeConnection.Close()
-	fileRequestClient := pb.NewHandleFileRequestsServiceClient(nodeConnection)
+	fileRequestClient := file_request.NewHandleFileRequestsServiceClient(nodeConnection)
 	if commandNumber == -1 {
-		request := pb.FileCommand{
+		request := file_request.FileCommand{
 			FileCommand: int32(commandNumber),
 			FileName:    fileName,
 			FileSize:    0,
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	if commandNumber == 0 {
-		request := pb.FileCommand{
+		request := file_request.FileCommand{
 			FileCommand: int32(commandNumber),
 			FileName:    fileName,
 			FileSize:    0,
@@ -95,7 +95,7 @@ func main() {
 	var bigBuff bytes.Buffer
 	bigBuff.Read(buf)
 
-	request := pb.FileCommand{
+	request := file_request.FileCommand{
 		FileCommand: int32(commandNumber),
 		FileName:    fileName,
 		FileSize:    int32(fileInfo.Size()),

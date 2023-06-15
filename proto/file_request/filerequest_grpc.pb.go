@@ -4,7 +4,7 @@
 // - protoc             v4.23.2
 // source: proto/filerequest.proto
 
-package proto
+package file_request
 
 import (
 	context "context"

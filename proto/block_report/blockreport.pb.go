@@ -4,7 +4,7 @@
 // 	protoc        v4.23.2
 // source: proto/blockreport.proto
 
-package proto
+package block_report
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
