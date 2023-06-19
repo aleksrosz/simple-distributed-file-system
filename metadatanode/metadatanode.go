@@ -1,7 +1,7 @@
 package metadatanode
 
 import (
-	pb "aleksrosz/simple-distributed-file-system/proto"
+	pb "aleksrosz/simple-distributed-file-system/proto/block_report"
 	pb2 "aleksrosz/simple-distributed-file-system/proto/health_check"
 	"fmt"
 	"google.golang.org/grpc"
